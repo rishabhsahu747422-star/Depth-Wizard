@@ -2,33 +2,10 @@ import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import TerrainViewer from "./TerrainViewer";
 import ViewerControls from "./ViewerControls";
+import FixtureResponse from "../data/FixtureResponse.json";
 
 const ResultsView = ({ selectedFile }) => {
   const [verticalExaggeration, setVerticalExaggeration] = useState(1);
-
-  const demoResultData = {
-    heightmap_png_b64: null,
-    confidence_png_b64: null,
-    texture_png_b64: null,
-    height_min: -0.1946883648633957,
-    height_max: 12.041318893432617,
-    metadata: {
-      crs: null,
-      bounds_wgs84: null,
-      resolution_m: null,
-      srtm_used: false,
-      calibration_method: "none_relative_only",
-      gsd_info: {
-        mode: "assumed_no_metadata",
-        source_gsd_m: null,
-        target_gsd_m: 0.33,
-        crop_side_px: 128,
-        original_shape: [128, 128],
-      },
-    },
-    image_id: "fixture-demo-0001",
-    input_type: "non_georeferenced",
-  };
 
   return (
     <section className="min-h-[calc(100vh-64px)] px-5 py-5">
@@ -70,7 +47,7 @@ const ResultsView = ({ selectedFile }) => {
           {/* 3D Viewport */}
           <div className="relative min-h-[600px] flex-1 overflow-hidden rounded-2xl bg-[#111315] shadow-lg">
             <TerrainViewer
-              resultData={demoResultData}
+              resultData={FixtureResponse}
               verticalExaggeration={verticalExaggeration}
             />
 
