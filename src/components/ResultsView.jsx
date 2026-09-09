@@ -1,11 +1,36 @@
-import React, { useState } from "react";
-import Sidebar from "./Sidebar";
+import React, { useRef, useState } from "react";
 import TerrainViewer from "./TerrainViewer";
 import ViewerControls from "./ViewerControls";
 import FixtureResponse from "../data/FixtureResponse.json";
+import { downloadJsonFile } from "../utils/downloadUtils";
 
 const ResultsView = ({ selectedFile }) => {
-  const [verticalExaggeration, setVerticalExaggeration] = useState(1);
+  const [cameraMode, setCameraMode] = useState("orbit");
+  const [verticalExaggeration, setVerticalExaggeration] = useState(0.5);
+
+  const [resetSignal, setResetSignal] = useState(0);
+
+  const cameraControllerRef = useRef(null);
+
+  const handleResetView = () => {
+    setCameraMode("orbit");
+    setVerticalExaggeration(0.5);
+    setResetSignal((current) => current + 1);
+  };
+
+  const handleExport = () => {
+    const exportData = {
+      project: "DepthWizard",
+      exportedAt: new Date().toISOString(),
+      result: FixtureResponse,
+    };
+
+    const success = downloadJsonFile(exportData, "depthwizard-result.json");
+
+    if (!success) {
+      alert("Export failed. Console check karo.");
+    }
+  };
 
   return (
     <section className="min-h-[calc(100vh-64px)] px-5 py-5">
@@ -30,25 +55,33 @@ const ResultsView = ({ selectedFile }) => {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setVerticalExaggeration(1)}
+              type="button"
+              onClick={handleResetView}
               className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-50"
             >
               Reset View
             </button>
 
-            <button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700">
+            <button
+              type="button"
+              onClick={handleExport}
+              className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
+            >
               Export
             </button>
           </div>
         </div>
 
-        {/* Workspace */}
-        <div className="flex flex-col gap-5 lg:flex-row">
+        {/* Full-Screen Terrain Workspace */}
+        <div className="w-full">
           {/* 3D Viewport */}
-          <div className="relative min-h-[600px] flex-1 overflow-hidden rounded-2xl bg-[#111315] shadow-lg">
+          <div className="relative h-[calc(100vh-80px)] w-full overflow-hidden rounded-2xl bg-[#111315] shadow-lg">
             <TerrainViewer
               resultData={FixtureResponse}
               verticalExaggeration={verticalExaggeration}
+              cameraMode={cameraMode}
+              resetSignal={resetSignal}
+              cameraControllerRef={cameraControllerRef}
             />
 
             {/* View Mode */}
@@ -63,35 +96,35 @@ const ResultsView = ({ selectedFile }) => {
             </div>
 
             {/* Viewer Controls */}
-            <div className="absolute bottom-4 left-4 z-10 flex gap-2">
-              <button className="rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-xs font-medium text-white backdrop-blur hover:bg-black/70">
-                Flythrough
-              </button>
-
-              <button className="rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-xs font-medium text-white backdrop-blur hover:bg-black/70">
-                Orbit
-              </button>
-            </div>
-
             <ViewerControls
+              cameraMode={cameraMode}
+              setCameraMode={setCameraMode}
               verticalExaggeration={verticalExaggeration}
               setVerticalExaggeration={setVerticalExaggeration}
+              onResetView={handleResetView}
             />
 
             {/* Zoom Controls */}
-            <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
-              <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-black/50 text-sm text-white backdrop-blur hover:bg-black/70">
+            <div className="absolute bottom-5 right-5 z-30 flex flex-col overflow-hidden rounded-xl border border-white/10 bg-black/75 shadow-xl backdrop-blur-xl">
+              <button
+                type="button"
+                onClick={() => cameraControllerRef.current?.zoomIn()}
+                className="flex h-11 w-11 items-center justify-center border-b border-white/10 text-2xl font-semibold text-white transition hover:bg-white/15 active:bg-white/25"
+                title="Zoom in"
+              >
                 +
               </button>
 
-              <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-black/50 text-sm text-white backdrop-blur hover:bg-black/70">
+              <button
+                type="button"
+                onClick={() => cameraControllerRef.current?.zoomOut()}
+                className="flex h-11 w-11 items-center justify-center text-2xl font-semibold text-white transition hover:bg-white/15 active:bg-white/25"
+                title="Zoom out"
+              >
                 −
               </button>
             </div>
           </div>
-
-          {/* Existing Phase 1 Sidebar */}
-          <Sidebar />
         </div>
       </div>
     </section>
