@@ -1,20 +1,35 @@
 import React from "react";
 
-const Navbar = ({ currentView, setCurrentView, onNewImage }) => {
+const Navbar = ({
+  currentView,
+  setCurrentView,
+  onNewImage,
+  hasUploadedImage = false,
+  hasResult = false,
+}) => {
   const navItems = [
     {
       id: "upload",
       label: "Upload",
+      enabled: true,
     },
     {
       id: "processing",
       label: "Processing",
+      enabled: hasUploadedImage,
     },
     {
       id: "results",
       label: "Results",
+      enabled: hasResult,
     },
   ];
+
+  const handleNavigation = (item) => {
+    if (!item.enabled) return;
+
+    setCurrentView(item.id);
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur">
@@ -41,17 +56,33 @@ const Navbar = ({ currentView, setCurrentView, onNewImage }) => {
           {navItems.map((item) => {
             const isActive = currentView === item.id;
 
+            const isDisabled = !item.enabled;
+
             return (
               <button
                 key={item.id}
-                onClick={() => setCurrentView(item.id)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                  isActive
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-500 hover:text-gray-900"
-                }`}
+                type="button"
+                disabled={isDisabled}
+                onClick={() => handleNavigation(item)}
+                className={`
+                  rounded-lg px-4 py-2
+                  text-sm font-medium
+                  transition-all duration-200
+
+                  ${
+                    isActive
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : isDisabled
+                        ? "cursor-not-allowed text-gray-300"
+                        : "text-gray-500 hover:bg-white/70 hover:text-gray-900"
+                  }
+                `}
               >
                 {item.label}
+
+                {isDisabled && item.id !== "upload" && (
+                  <span className="ml-1 text-[9px] opacity-70">🔒</span>
+                )}
               </button>
             );
           })}
@@ -59,8 +90,20 @@ const Navbar = ({ currentView, setCurrentView, onNewImage }) => {
 
         {/* New Image */}
         <button
+          type="button"
           onClick={onNewImage}
-          className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+          className="
+            rounded-lg
+            border border-gray-200
+            bg-white
+            px-4 py-2
+            text-sm font-semibold
+            text-gray-700
+            transition
+            hover:border-blue-200
+            hover:bg-blue-50
+            hover:text-blue-600
+          "
         >
           + New Image
         </button>

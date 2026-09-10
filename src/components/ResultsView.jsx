@@ -1,133 +1,251 @@
 import React, { useRef, useState } from "react";
+
 import TerrainViewer from "./TerrainViewer";
 import ViewerControls from "./ViewerControls";
-import FixtureResponse from "../data/FixtureResponse.json";
 import { downloadJsonFile } from "../utils/downloadUtils";
 
-const ResultsView = ({ selectedFile }) => {
+const ResultsView = ({ selectedFile, resultData }) => {
   const [cameraMode, setCameraMode] = useState("orbit");
   const [verticalExaggeration, setVerticalExaggeration] = useState(0.5);
-
   const [resetSignal, setResetSignal] = useState(0);
 
   const cameraControllerRef = useRef(null);
 
-  const handleResetView = () => {
-    setCameraMode("orbit");
-    setVerticalExaggeration(0.5);
-    setResetSignal((current) => current + 1);
-  };
+  // Safety check
+  if (!resultData) {
+    return (
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-[#F6F7F9] px-6">
+        <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+            <span className="text-2xl">⚠️</span>
+          </div>
 
-  const handleExport = () => {
-    const exportData = {
-      project: "DepthWizard",
-      exportedAt: new Date().toISOString(),
-      result: FixtureResponse,
-    };
+          <h2 className="text-xl font-semibold text-gray-900">
+            No Result Available
+          </h2>
 
-    const success = downloadJsonFile(exportData, "depthwizard-result.json");
+          <p className="mt-2 text-sm leading-6 text-gray-500">
+            Please upload an image and complete the processing pipeline first.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-    if (!success) {
-      alert("Export failed. Console check karo.");
+  const handleReset = () => {
+    setResetSignal((prev) => prev + 1);
+
+    if (cameraControllerRef.current?.reset) {
+      cameraControllerRef.current.reset();
     }
   };
 
+  const handleExport = () => {
+    downloadJsonFile(
+      {
+        image_id: resultData.image_id,
+        input_type: resultData.input_type,
+        height_min: resultData.height_min,
+        height_max: resultData.height_max,
+        metadata: resultData.metadata,
+      },
+      `${resultData.image_id || "depthwizard-result"}.json`,
+    );
+  };
+
   return (
-    <section className="min-h-[calc(100vh-64px)] px-5 py-5">
-      <div className="mx-auto max-w-[1600px]">
-        {/* Header */}
-        <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+    <div className="min-h-[calc(100vh-64px)] bg-[#F6F7F9]">
+      {/* Header */}
+      <div className="border-b border-gray-200 bg-white">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-green-50 px-2.5 py-1 text-[10px] font-bold text-green-600">
-                COMPLETE
-              </span>
+            <h1 className="text-xl font-semibold text-gray-900">
+              3D Terrain Results
+            </h1>
 
-              <span className="text-xs text-gray-400">
-                {selectedFile?.name || "Demo terrain"}
-              </span>
-            </div>
-
-            <h2 className="mt-2 text-2xl font-bold tracking-tight text-gray-900">
-              Terrain Reconstruction
-            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Explore the generated terrain model and elevation data.
+            </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleResetView}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-50"
-            >
-              Reset View
-            </button>
+          <div className="flex items-center gap-3">
+            {selectedFile && (
+              <div className="hidden rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600 md:block">
+                {selectedFile.name}
+              </div>
+            )}
 
             <button
               type="button"
               onClick={handleExport}
-              className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
             >
-              Export
+              Export JSON
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Full-Screen Terrain Workspace */}
-        <div className="w-full">
-          {/* 3D Viewport */}
-          <div className="relative h-[calc(100vh-80px)] w-full overflow-hidden rounded-2xl bg-[#111315] shadow-lg">
+      {/* Main Viewer Area */}
+      <div className="mx-auto max-w-[1600px] px-6 py-6">
+        <div className="grid min-h-[calc(100vh-180px)] grid-cols-1 gap-6 xl:grid-cols-[1fr_320px]">
+          {/* Terrain Viewer */}
+          <div className="relative min-h-[600px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
             <TerrainViewer
-              resultData={FixtureResponse}
+              resultData={resultData}
               verticalExaggeration={verticalExaggeration}
               cameraMode={cameraMode}
               resetSignal={resetSignal}
               cameraControllerRef={cameraControllerRef}
             />
 
-            {/* View Mode */}
-            <div className="absolute left-4 top-4 z-10 rounded-lg border border-white/10 bg-black/50 px-3 py-2 backdrop-blur">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
-                View Mode
-              </p>
+            {/* Viewer Status */}
+            <div className="pointer-events-none absolute left-4 top-4 rounded-lg border border-white/50 bg-white/90 px-3 py-2 shadow-sm backdrop-blur">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-green-500" />
 
-              <p className="mt-1 text-xs font-semibold text-white">
-                3D Terrain
-              </p>
+                <span className="text-xs font-medium text-gray-700">
+                  Terrain Model Ready
+                </span>
+              </div>
             </div>
 
-            {/* Viewer Controls */}
+            {/* Input Type */}
+            <div className="pointer-events-none absolute bottom-4 left-4 rounded-lg border border-white/50 bg-white/90 px-3 py-2 shadow-sm backdrop-blur">
+              <p className="text-xs text-gray-500">Input Type</p>
+
+              <p className="mt-0.5 text-sm font-medium capitalize text-gray-800">
+                {String(resultData.input_type || "Unknown").replaceAll(
+                  "_",
+                  " ",
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Controls / Information */}
+          <div className="flex flex-col gap-6">
             <ViewerControls
               cameraMode={cameraMode}
               setCameraMode={setCameraMode}
               verticalExaggeration={verticalExaggeration}
               setVerticalExaggeration={setVerticalExaggeration}
-              onResetView={handleResetView}
+              onReset={handleReset}
+              cameraControllerRef={cameraControllerRef}
             />
 
-            {/* Zoom Controls */}
-            <div className="absolute bottom-5 right-5 z-30 flex flex-col overflow-hidden rounded-xl border border-white/10 bg-black/75 shadow-xl backdrop-blur-xl">
-              <button
-                type="button"
-                onClick={() => cameraControllerRef.current?.zoomIn()}
-                className="flex h-11 w-11 items-center justify-center border-b border-white/10 text-2xl font-semibold text-white transition hover:bg-white/15 active:bg-white/25"
-                title="Zoom in"
-              >
-                +
-              </button>
+            {/* Terrain Statistics */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Terrain Statistics
+              </h2>
 
-              <button
-                type="button"
-                onClick={() => cameraControllerRef.current?.zoomOut()}
-                className="flex h-11 w-11 items-center justify-center text-2xl font-semibold text-white transition hover:bg-white/15 active:bg-white/25"
-                title="Zoom out"
-              >
-                −
-              </button>
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <span className="text-sm text-gray-500">Minimum Height</span>
+
+                  <span className="text-sm font-semibold text-gray-900">
+                    {Number(resultData.height_min ?? 0).toFixed(2)} m
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                  <span className="text-sm text-gray-500">Maximum Height</span>
+
+                  <span className="text-sm font-semibold text-gray-900">
+                    {Number(resultData.height_max ?? 0).toFixed(2)} m
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Elevation Range</span>
+
+                  <span className="text-sm font-semibold text-gray-900">
+                    {(
+                      Number(resultData.height_max ?? 0) -
+                      Number(resultData.height_min ?? 0)
+                    ).toFixed(2)}{" "}
+                    m
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Calibration Information */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Calibration
+              </h2>
+
+              <div className="mt-4 space-y-3">
+                <div>
+                  <p className="text-xs text-gray-400">Method</p>
+
+                  <p className="mt-1 text-sm font-medium text-gray-700">
+                    {resultData.metadata?.calibration_method || "Not available"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-400">SRTM Used</p>
+
+                  <p className="mt-1 text-sm font-medium text-gray-700">
+                    {resultData.metadata?.srtm_used ? "Yes" : "No"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-gray-400">CRS</p>
+
+                  <p className="mt-1 break-all text-sm font-medium text-gray-700">
+                    {resultData.metadata?.crs || "Not available"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Resolution / GSD */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Image Information
+              </h2>
+
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Target GSD</span>
+
+                  <span className="text-sm font-semibold text-gray-900">
+                    {resultData.metadata?.gsd_info?.target_gsd_m != null
+                      ? `${resultData.metadata.gsd_info.target_gsd_m} m`
+                      : "N/A"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Crop Size</span>
+
+                  <span className="text-sm font-semibold text-gray-900">
+                    {resultData.metadata?.gsd_info?.crop_side_px
+                      ? `${resultData.metadata.gsd_info.crop_side_px}px`
+                      : "N/A"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Resolution</span>
+
+                  <span className="text-sm font-semibold text-gray-900">
+                    {resultData.metadata?.resolution_m != null
+                      ? `${resultData.metadata.resolution_m} m`
+                      : "N/A"}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
 

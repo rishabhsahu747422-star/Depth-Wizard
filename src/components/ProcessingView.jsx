@@ -19,6 +19,8 @@ const ProcessingView = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
+    let completionTimer;
+
     const interval = setInterval(() => {
       setCurrentStep((previousStep) => {
         if (previousStep < steps.length - 1) {
@@ -27,7 +29,7 @@ const ProcessingView = ({ onComplete }) => {
 
         clearInterval(interval);
 
-        setTimeout(() => {
+        completionTimer = setTimeout(() => {
           onComplete();
         }, 800);
 
@@ -35,12 +37,19 @@ const ProcessingView = ({ onComplete }) => {
       });
     }, 1800);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearInterval(interval);
+
+      if (completionTimer) {
+        clearTimeout(completionTimer);
+      }
+    };
+  }, [onComplete]);
 
   return (
     <section className="min-h-[calc(100vh-64px)] px-6 py-12">
       <div className="mx-auto max-w-3xl">
+        {/* Heading */}
         <div className="text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-xl text-blue-600">
             ◌
@@ -59,19 +68,28 @@ const ProcessingView = ({ onComplete }) => {
         <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           {steps.map((step, index) => {
             const isCompleted = index < currentStep;
+
             const isActive = index === currentStep;
 
             return (
               <div key={step.title} className="flex gap-4">
                 <div className="flex flex-col items-center">
                   <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                      isCompleted
-                        ? "bg-green-100 text-green-600"
-                        : isActive
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-400"
-                    }`}
+                    className={`
+                      flex h-10 w-10
+                      shrink-0 items-center
+                      justify-center
+                      rounded-full
+                      text-sm font-bold
+
+                      ${
+                        isCompleted
+                          ? "bg-green-100 text-green-600"
+                          : isActive
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-400"
+                      }
+                    `}
                   >
                     {isCompleted ? "✓" : index + 1}
                   </div>
@@ -83,11 +101,14 @@ const ProcessingView = ({ onComplete }) => {
 
                 <div className="pb-8">
                   <h3
-                    className={`font-semibold ${
-                      isActive || isCompleted
-                        ? "text-gray-900"
-                        : "text-gray-400"
-                    }`}
+                    className={`
+                      font-semibold
+                      ${
+                        isActive || isCompleted
+                          ? "text-gray-900"
+                          : "text-gray-400"
+                      }
+                    `}
                   >
                     {step.title}
                   </h3>
